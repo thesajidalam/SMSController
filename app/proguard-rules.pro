@@ -1,0 +1,3 @@
+-keep class com.smscontroller.** { *; }
+-keepclassmembers class com.smscontroller.** { *; }
+-keep class * extends android.app.admin.DeviceAdminReceiver { *; }
