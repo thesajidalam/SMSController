@@ -23,6 +23,9 @@
   <a href="https://github.com/thesajidalam/SMSController/stargazers">
     <img src="https://img.shields.io/github/stars/thesajidalam/SMSController?style=for-the-badge&color=00D084" alt="Stars">
   </a>
+  <a href="https://github.com/thesajidalam">
+    <img src="https://img.shields.io/badge/Developer-Sajid%20Alam-00D084?style=for-the-badge&logo=github" alt="Developer">
+  </a>
 </p>
 
 <p align="center">
@@ -356,7 +359,7 @@ The device will not respond. Only recognized commands trigger a response SMS.
 ```
 MIT License
 
-Copyright (c) 2026 thesajidalam
+Copyright (c) 2026 Sajid Alam (thesajidalam)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -410,13 +413,39 @@ If SMSController helped you or your business, consider:
 
 ---
 
+## 👨‍💻 Developer
+
 <p align="center">
-  <b>Built with ❤️ for the open source community</b>
+  <a href="https://github.com/thesajidalam">
+    <img src="https://img.shields.io/badge/GitHub-@thesajidalam-181717?style=for-the-badge&logo=github" alt="GitHub">
+  </a>
   <br>
-  <i>No cloud. No tracking. No BS.</i>
+  <br>
+</p>
+
+**Sajid Alam** — Independent Android Developer & Open Source Enthusiast.
+
+I build tools that put control back in users' hands. SMSController was born from a simple idea: *your device should obey you, even when there's no internet.*
+
+- 🔭 Currently working on: Offline-first Android tools
+- 🌍 Based in: Bangladesh
+- 💬 Ask me about: Android, Kotlin, Compose, Reverse Engineering
+- 📫 Reach me: [GitHub](https://github.com/thesajidalam)
+
+---
+
+<p align="center">
+  <b>Built with ❤️ by <a href="https://github.com/thesajidalam">Sajid Alam</a> for the open source community</b>
+  <br>
+  <i>No cloud. No tracking. No BS. Just pure SMS control.</i>
   <br>
   <br>
   <a href="https://github.com/thesajidalam/SMSController">
     <img src="https://img.shields.io/badge/View%20on-GitHub-00D084?style=for-the-badge&logo=github" alt="GitHub">
+  </a>
+  <br>
+  <br>
+  <a href="https://github.com/thesajidalam">
+    <img src="https://img.shields.io/github/followers/thesajidalam?style=social&label=Follow%20%40thesajidalam" alt="Follow">
   </a>
 </p>
