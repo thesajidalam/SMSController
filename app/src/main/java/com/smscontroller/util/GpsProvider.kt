@@ -17,9 +17,15 @@ import com.google.android.gms.location.Priority
 
 object GpsProvider {
     private var fusedClient: FusedLocationProviderClient? = null
-    private var callback: LocationCallback? = null
+    private var activeCallback: LocationCallback? = null
+    private var isRequestActive = false
 
     fun getLocationAndSend(context: Context, senderNumber: String) {
+        if (isRequestActive) {
+            SmsSender.send(context, senderNumber, "GPS request already in progress. Wait a moment.")
+            return
+        }
+
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -43,6 +49,7 @@ object GpsProvider {
             return
         }
 
+        isRequestActive = true
         fusedClient = LocationServices.getFusedLocationProviderClient(context)
 
         val locationRequest = LocationRequest.Builder(
@@ -51,7 +58,7 @@ object GpsProvider {
             .setMinUpdateIntervalMillis(1000)
             .build()
 
-        callback = object : LocationCallback() {
+        val callback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 super.onLocationResult(result)
                 val location = result.lastLocation
@@ -72,21 +79,26 @@ object GpsProvider {
                 removeUpdates()
             }
         }
+        activeCallback = callback
 
         try {
             fusedClient?.requestLocationUpdates(
                 locationRequest,
-                callback!!,
+                callback,
                 Looper.getMainLooper()
             )
         } catch (e: SecurityException) {
             SmsSender.send(context, senderNumber, "GPS Error: Location permission denied.")
+            removeUpdates()
         }
     }
 
     private fun removeUpdates() {
-        callback?.let { fusedClient?.removeLocationUpdates(it) }
-        callback = null
+        try {
+            activeCallback?.let { fusedClient?.removeLocationUpdates(it) }
+        } catch (_: Exception) {}
+        activeCallback = null
         fusedClient = null
+        isRequestActive = false
     }
 }

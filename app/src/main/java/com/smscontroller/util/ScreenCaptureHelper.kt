@@ -1,14 +1,12 @@
 package com.smscontroller.util
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
 import android.media.projection.MediaProjection
-import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -25,8 +23,9 @@ object ScreenCaptureHelper {
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
-    private var callback: ((String) -> Unit)? = null
     private var isInitialized = false
+    private var isCapturing = false
+    private var pendingSender: String? = null
 
     fun init(projection: MediaProjection) {
         mediaProjection = projection
@@ -36,17 +35,23 @@ object ScreenCaptureHelper {
     fun isReady(): Boolean = isInitialized
 
     fun captureScreen(context: Context, senderNumber: String) {
-        callback = { result -> SmsSender.send(context, senderNumber, result) }
+        if (isCapturing) {
+            SmsSender.send(context, senderNumber, "Screenshot already in progress. Wait a moment.")
+            return
+        }
 
         if (!isInitialized) {
-            callback?.invoke("Screenshot Error: MediaProjection not initialized. Enable Screen Capture in Advanced Features and grant permission.")
+            SmsSender.send(context, senderNumber, "Screenshot Error: MediaProjection not initialized. Enable Screen Capture in Advanced Features and grant permission.")
             return
         }
 
         val projection = mediaProjection ?: run {
-            callback?.invoke("Screenshot Error: MediaProjection not available")
+            SmsSender.send(context, senderNumber, "Screenshot Error: MediaProjection not available")
             return
         }
+
+        isCapturing = true
+        pendingSender = senderNumber
 
         try {
             val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -70,23 +75,25 @@ object ScreenCaptureHelper {
 
             Handler(Looper.getMainLooper()).postDelayed({
                 captureAndSaveImage(context)
+                isCapturing = false
+                pendingSender = null
             }, 500)
         } catch (e: Exception) {
-            callback?.invoke("Screenshot Error: ${e.message}")
+            SmsSender.send(context, pendingSender ?: "unknown", "Screenshot Error: ${e.message}")
             cleanup()
+            isCapturing = false
+            pendingSender = null
         }
     }
 
     private fun captureAndSaveImage(context: Context) {
         val reader = imageReader ?: run {
-            callback?.invoke("Screenshot Error: ImageReader not available")
             cleanup()
             return
         }
 
         val image = reader.acquireLatestImage()
         if (image == null) {
-            callback?.invoke("Screenshot Error: No image data")
             cleanup()
             return
         }
@@ -120,9 +127,9 @@ object ScreenCaptureHelper {
             cropped.recycle()
             bitmap.recycle()
 
-            callback?.invoke("Screenshot saved: ${file.absolutePath}")
+            SmsSender.send(context, pendingSender ?: "unknown", "Screenshot saved: ${file.absolutePath}")
         } catch (e: Exception) {
-            callback?.invoke("Screenshot Error: ${e.message}")
+            SmsSender.send(context, pendingSender ?: "unknown", "Screenshot Error: ${e.message}")
         } finally {
             image.close()
             cleanup()
@@ -147,5 +154,6 @@ object ScreenCaptureHelper {
         } catch (_: Exception) {}
         mediaProjection = null
         isInitialized = false
+        isCapturing = false
     }
 }

@@ -8,18 +8,18 @@ import android.os.Build
 
 object FlashlightHelper {
     private var isFlashOn = false
+    private var cameraId: String? = null
 
     fun toggleFlashlight(context: Context): String {
         try {
             val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-            val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
-                val chars = cameraManager.getCameraCharacteristics(id)
-                chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-            } ?: return "Flashlight Error: No flash available"
+            val flashId = cameraId ?: findFlashCamera(cameraManager) ?: return "Flashlight Error: No flash available"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                isFlashOn = !isFlashOn
-                cameraManager.setTorchMode(cameraId, isFlashOn)
+                synchronized(this) {
+                    isFlashOn = !isFlashOn
+                    cameraManager.setTorchMode(flashId, isFlashOn)
+                }
                 return if (isFlashOn) "Flashlight turned ON" else "Flashlight turned OFF"
             } else {
                 return "Flashlight Error: Not supported on this device"
@@ -31,19 +31,31 @@ object FlashlightHelper {
         }
     }
 
+    private fun findFlashCamera(manager: CameraManager): String? {
+        try {
+            for (id in manager.cameraIdList) {
+                val chars = manager.getCameraCharacteristics(id)
+                if (chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true) {
+                    cameraId = id
+                    return id
+                }
+            }
+        } catch (_: Exception) {}
+        return null
+    }
+
     fun turnOff(context: Context) {
-        if (isFlashOn) {
-            try {
-                val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-                val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
-                    val chars = cameraManager.getCameraCharacteristics(id)
-                    chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-                }
-                if (cameraId != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    cameraManager.setTorchMode(cameraId, false)
-                }
-            } catch (_: Exception) {}
-            isFlashOn = false
+        synchronized(this) {
+            if (isFlashOn) {
+                try {
+                    val flashId = cameraId
+                    if (flashId != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+                        cameraManager.setTorchMode(flashId, false)
+                    }
+                } catch (_: Exception) {}
+                isFlashOn = false
+            }
         }
     }
 }

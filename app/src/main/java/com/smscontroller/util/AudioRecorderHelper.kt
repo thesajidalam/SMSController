@@ -14,71 +14,91 @@ object AudioRecorderHelper {
     private var currentFilePath: String? = null
     private var isRecording = false
 
-    fun isRecording(): Boolean = isRecording
+    fun isRecording(): Boolean = synchronized(this) { isRecording }
 
     fun startRecording(context: Context): String {
-        if (isRecording) return "Recording already in progress"
+        synchronized(this) {
+            if (isRecording) return "Recording already in progress"
 
-        try {
-            val recordsDir = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-                "SMSController"
-            )
-            if (!recordsDir.exists()) recordsDir.mkdirs()
+            try {
+                val recordsDir = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
+                    "SMSController"
+                )
+                if (!recordsDir.exists()) recordsDir.mkdirs()
 
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val fileName = "RECORD_$timestamp.3gp"
-            val file = File(recordsDir, fileName)
-            currentFilePath = file.absolutePath
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                val fileName = "RECORD_$timestamp.3gp"
+                val file = File(recordsDir, fileName)
+                currentFilePath = file.absolutePath
 
-            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                MediaRecorder(context)
-            } else {
-                @Suppress("DEPRECATION")
-                MediaRecorder()
+                mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    MediaRecorder(context)
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaRecorder()
+                }
+
+                mediaRecorder?.apply {
+                    setAudioSource(MediaRecorder.AudioSource.MIC)
+                    setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                    setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+                    setAudioChannels(1)
+                    setAudioSamplingRate(44100)
+                    setAudioEncodingBitRate(128000)
+                    setOutputFile(currentFilePath)
+                    prepare()
+                    start()
+                }
+
+                isRecording = true
+                return "Recording started: $fileName"
+            } catch (e: Exception) {
+                mediaRecorder?.release()
+                mediaRecorder = null
+                currentFilePath = null
+                return "Recording Error: ${e.message}"
             }
-
-            mediaRecorder?.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-                setAudioChannels(1)
-                setAudioSamplingRate(44100)
-                setAudioEncodingBitRate(128000)
-                setOutputFile(currentFilePath)
-                prepare()
-                start()
-            }
-
-            isRecording = true
-            return "Recording started: $fileName"
-        } catch (e: Exception) {
-            return "Recording Error: ${e.message}"
         }
     }
 
     fun stopRecording(): String {
-        if (!isRecording) return "No recording in progress"
+        synchronized(this) {
+            if (!isRecording) return "No recording in progress"
 
-        try {
-            mediaRecorder?.apply {
-                stop()
-                reset()
-                release()
+            try {
+                mediaRecorder?.apply {
+                    try {
+                        stop()
+                    } catch (_: Exception) {}
+                    reset()
+                    release()
+                }
+                mediaRecorder = null
+                isRecording = false
+                val path = currentFilePath ?: "unknown"
+                currentFilePath = null
+                return "Recording stopped. Saved: $path"
+            } catch (e: Exception) {
+                return "Recording Error: ${e.message}"
             }
-            mediaRecorder = null
-            isRecording = false
-            val path = currentFilePath ?: "unknown"
-            currentFilePath = null
-            return "Recording stopped. Saved: $path"
-        } catch (e: Exception) {
-            return "Recording Error: ${e.message}"
         }
     }
 
     fun cleanup() {
-        if (isRecording) {
-            stopRecording()
+        synchronized(this) {
+            if (isRecording) {
+                try {
+                    mediaRecorder?.apply {
+                        try { stop() } catch (_: Exception) {}
+                        reset()
+                        release()
+                    }
+                } catch (_: Exception) {}
+                mediaRecorder = null
+                isRecording = false
+                currentFilePath = null
+            }
         }
     }
 }

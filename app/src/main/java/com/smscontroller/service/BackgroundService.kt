@@ -9,12 +9,15 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.smscontroller.MainActivity
 import com.smscontroller.SMSControllerApp
+import java.util.concurrent.atomic.AtomicBoolean
 
 class BackgroundService : Service() {
+    private val isStopping = AtomicBoolean(false)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        isStopping.set(false)
         try {
             val notification = createNotification()
             startForeground(NOTIFICATION_ID, notification)
@@ -44,17 +47,19 @@ class BackgroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        try {
-            val prefs = SMSControllerApp.instance.prefs
-            if (prefs.isServiceEnabled) {
-                val intent = Intent(this, BackgroundService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(intent)
-                } else {
-                    startService(intent)
+        if (!isStopping.getAndSet(true)) {
+            try {
+                val prefs = SMSControllerApp.instance.prefs
+                if (prefs.isServiceEnabled) {
+                    val intent = Intent(this, BackgroundService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(intent)
+                    } else {
+                        startService(intent)
+                    }
                 }
-            }
-        } catch (_: Exception) {}
+            } catch (_: Exception) {}
+        }
     }
 
     companion object {

@@ -93,7 +93,7 @@
         <service
             android:name=".service.BackgroundService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|mediaPlayback|phoneCall" />
 
     </application>
 

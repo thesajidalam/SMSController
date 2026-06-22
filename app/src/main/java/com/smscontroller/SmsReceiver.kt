@@ -9,10 +9,12 @@ import com.smscontroller.util.PrefsManager
 import com.smscontroller.util.SmsCommand
 import com.smscontroller.util.SmsSender
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
 class SmsReceiver : BroadcastReceiver() {
     companion object {
         private val processedMessages = ConcurrentHashMap<String, Long>()
+        private val sequenceCounter = AtomicLong(0)
         private const val DEDUP_WINDOW_MS = 45000L
     }
 
@@ -23,46 +25,26 @@ class SmsReceiver : BroadcastReceiver() {
         if (!prefs.isServiceEnabled) return
 
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-        val messageBody = messages.firstOrNull()?.messageBody ?: return
+        val messageBody = messages.firstOrNull()?.messageBody?.trim() ?: return
         val senderNumber = messages.firstOrNull()?.originatingAddress ?: return
-        val timestamp = messages.firstOrNull()?.timestampMillis
+        val timestamp = messages.firstOrNull()?.timestampMillis ?: 0L
 
         if (!prefs.isAuthorized(senderNumber)) return
 
-        val dedupKey = "${senderNumber}:${messageBody}:${timestamp}"
         val now = System.currentTimeMillis()
+        val dedupKey = "${senderNumber}:${messageBody}:${timestamp}"
 
-        val lastProcessed = processedMessages[dedupKey]
-        if (lastProcessed != null && (now - lastProcessed) < DEDUP_WINDOW_MS) return
+        val previous = processedMessages.putIfAbsent(dedupKey, now)
+        if (previous != null) {
+            if (now - previous < DEDUP_WINDOW_MS) return
+            processedMessages[dedupKey] = now
+        }
 
-        processedMessages[dedupKey] = now
-
-        cleanupOldEntries()
+        if (processedMessages.size > 200) {
+            cleanupOldEntries()
+        }
 
         val command = SmsCommand.fromMessage(messageBody) ?: return
-
-        val cooldownMap = mapOf(
-            SmsCommand.Lock to 30000L,
-            SmsCommand.Beep to 60000L,
-            SmsCommand.Gps to 30000L,
-            SmsCommand.Battery to 10000L,
-            SmsCommand.Photo to 30000L,
-            SmsCommand.Wipe to 120000L,
-            SmsCommand.Flash to 5000L,
-            SmsCommand.Callme to 30000L,
-            SmsCommand.Wifi to 30000L,
-            SmsCommand.Data to 30000L,
-            SmsCommand.RecordStart to 10000L,
-            SmsCommand.RecordStop to 5000L,
-            SmsCommand.Screenshot to 30000L
-        )
-
-        val cmdKey = command::class.java.simpleName
-        val prevCmdTime = processedMessages["cmd_$cmdKey"] ?: 0L
-        val cooldown = cooldownMap[command] ?: 15000L
-        if (prevCmdTime != 0L && (now - prevCmdTime) < cooldown) return
-
-        processedMessages["cmd_$cmdKey"] = now
 
         if (!isCommandEnabled(prefs, command)) {
             SmsSender.send(context, senderNumber, "Command is disabled. Enable it in app.")

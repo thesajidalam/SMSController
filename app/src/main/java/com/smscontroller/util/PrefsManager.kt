@@ -77,7 +77,11 @@ class PrefsManager(context: Context) {
     fun isAuthorized(sender: String): Boolean {
         val nums = getAuthorizedNumbers()
         if (nums.isEmpty()) return true
-        return nums.any { sender.contains(it.replace(Regex("[^0-9+]"), "")) }
+        val normalizedSender = sender.replace(Regex("[^0-9]"), "")
+        return nums.any { authorized ->
+            val normalizedAuth = authorized.replace(Regex("[^0-9]"), "")
+            normalizedAuth.isNotBlank() && normalizedSender.endsWith(normalizedAuth)
+        }
     }
 
     var commandCount: Int

@@ -21,25 +21,27 @@ import com.smscontroller.SMSControllerApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 object CommandExecutor {
+    private val scope = CoroutineScope(Dispatchers.IO)
     private var beepJob: Job? = null
+    private var beepPlayer: MediaPlayer? = null
+    private var beepVibrator: Vibrator? = null
     private var isBeeping = false
-    private var lastLockTime = 0L
-    private var lastFlashTime = 0L
-    private var lastCallmeTime = 0L
-    private var lastWifiTime = 0L
-    private var lastDataTime = 0L
 
-    private val commandTimestamps = mutableMapOf<String, Long>()
+    private val commandTimestamps = ConcurrentHashMap<String, Long>()
 
     fun isDuplicate(commandType: String, cooldownMs: Long = 15000): Boolean {
         val now = System.currentTimeMillis()
-        val last = commandTimestamps[commandType] ?: 0L
-        if (now - last < cooldownMs) return true
-        commandTimestamps[commandType] = now
+        val last = commandTimestamps.putIfAbsent(commandType, now)
+        if (last != null) {
+            if (now - last < cooldownMs) return true
+            commandTimestamps[commandType] = now
+        }
         return false
     }
 
@@ -88,7 +90,7 @@ object CommandExecutor {
 
         isBeeping = true
         beepJob?.cancel()
-        beepJob = CoroutineScope(Dispatchers.IO).launch {
+        beepJob = scope.launch {
             val prefs = SMSControllerApp.instance.prefs
             val duration = prefs.beepDurationSeconds
             val ringtoneUri = prefs.beepRingtoneUri
@@ -128,6 +130,7 @@ object CommandExecutor {
                     @Suppress("DEPRECATION")
                     context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
                 }
+                beepVibrator = vibrator
 
                 val vibePattern = longArrayOf(0, 500, 300, 500, 300, 500, 300, 500, 300, 500)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -142,6 +145,7 @@ object CommandExecutor {
                 SmsSender.send(context, senderNumber, "Beep started for ${duration}s")
 
                 val player = MediaPlayer()
+                beepPlayer = player
                 try {
                     player.setAudioStreamType(AudioManager.STREAM_ALARM)
                     player.isLooping = true
@@ -162,20 +166,20 @@ object CommandExecutor {
 
                     delay(duration * 1000L)
 
-                    try {
-                        player.stop()
-                        player.release()
-                    } catch (_: Exception) {}
-                    vibrator.cancel()
+                    stopBeepInternal()
                 } catch (e: Exception) {
-                    try { player.release() } catch (_: Exception) {}
+                    stopBeepInternal()
                 }
             } catch (e: Exception) {
                 if (isBeeping) {
                     SmsSender.send(context, senderNumber, "Beep Error: ${e.message}")
                 }
             } finally {
-                try { wakeLock?.release() } catch (_: Exception) {}
+                try {
+                    wakeLock?.let {
+                        if (it.isHeld) it.release()
+                    }
+                } catch (_: Exception) {}
                 isBeeping = false
             }
         }
@@ -183,7 +187,25 @@ object CommandExecutor {
 
     fun stopBeep() {
         beepJob?.cancel()
+        stopBeepInternal()
         isBeeping = false
+    }
+
+    private fun stopBeepInternal() {
+        try {
+            beepPlayer?.apply {
+                if (isPlaying) {
+                    stop()
+                }
+                release()
+            }
+        } catch (_: Exception) {}
+        beepPlayer = null
+
+        try {
+            beepVibrator?.cancel()
+        } catch (_: Exception) {}
+        beepVibrator = null
     }
 
     private fun getBattery(context: Context, senderNumber: String) {
