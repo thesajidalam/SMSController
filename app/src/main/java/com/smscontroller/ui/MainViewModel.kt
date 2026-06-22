@@ -56,6 +56,9 @@ class MainViewModel : ViewModel() {
     private val _ownerNumber = MutableStateFlow(prefs.ownerNumber)
     val ownerNumber: StateFlow<String> = _ownerNumber.asStateFlow()
 
+    private val _commandCount = MutableStateFlow(prefs.commandCount)
+    val commandCount: StateFlow<Int> = _commandCount.asStateFlow()
+
     private val _screenCaptureReady = MutableStateFlow(false)
     val screenCaptureReady: StateFlow<Boolean> = _screenCaptureReady.asStateFlow()
 
@@ -85,6 +88,10 @@ class MainViewModel : ViewModel() {
 
     private val _screenshotEnabled = MutableStateFlow(prefs.isScreenshotEnabled)
     val screenshotEnabled: StateFlow<Boolean> = _screenshotEnabled.asStateFlow()
+
+    fun refreshCommandCount() {
+        _commandCount.value = prefs.commandCount
+    }
 
     fun checkDeviceAdmin(context: Context) {
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager

@@ -44,6 +44,7 @@ object CommandExecutor {
     }
 
     fun execute(context: Context, command: SmsCommand, senderNumber: String) {
+        SMSControllerApp.instance.prefs.incrementCommandCount()
         when (command) {
             SmsCommand.Lock -> lockDevice(context, senderNumber)
             SmsCommand.Beep -> beepDevice(context, senderNumber)

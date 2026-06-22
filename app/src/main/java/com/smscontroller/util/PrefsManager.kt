@@ -28,6 +28,7 @@ class PrefsManager(context: Context) {
         private const val KEY_RECORD_ENABLED = "record_enabled"
         private const val KEY_SCREENSHOT_ENABLED = "screenshot_enabled"
         private const val KEY_OWNER_NUMBER = "owner_number"
+        private const val KEY_COMMAND_COUNT = "command_count"
     }
 
     var isServiceEnabled: Boolean
@@ -77,6 +78,14 @@ class PrefsManager(context: Context) {
         val nums = getAuthorizedNumbers()
         if (nums.isEmpty()) return true
         return nums.any { sender.contains(it.replace(Regex("[^0-9+]"), "")) }
+    }
+
+    var commandCount: Int
+        get() = prefs.getInt(KEY_COMMAND_COUNT, 0)
+        set(value) = prefs.edit { putInt(KEY_COMMAND_COUNT, value) }
+
+    fun incrementCommandCount() {
+        commandCount = commandCount + 1
     }
 
     var isBatteryEnabled: Boolean

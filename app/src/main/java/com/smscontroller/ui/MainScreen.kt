@@ -127,6 +127,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val recordEnabled by viewModel.recordEnabled.collectAsStateWithLifecycle()
     val screenshotEnabled by viewModel.screenshotEnabled.collectAsStateWithLifecycle()
     val screenCaptureReady by viewModel.screenCaptureReady.collectAsStateWithLifecycle()
+    val commandCount by viewModel.commandCount.collectAsStateWithLifecycle()
 
     var showMenu by remember { mutableStateOf(false) }
     var showNumbersDialog by remember { mutableStateOf(false) }
@@ -191,6 +192,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     }
 
     LaunchedEffect(Unit) {
+        viewModel.refreshCommandCount()
         viewModel.checkDeviceAdmin(context)
         viewModel.checkBatteryOptimization(context)
         viewModel.checkScreenCapture(context)
@@ -271,7 +273,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         ) {
             item { Spacer(Modifier.height(4.dp)) }
 
-            item { StatusBanner(serviceEnabled, deviceAdminActive, batteryOptimized) }
+            item { StatusBanner(serviceEnabled, deviceAdminActive, batteryOptimized, commandCount) }
 
             item { ServiceToggleCard(serviceEnabled) { viewModel.toggleService(context) } }
 
@@ -358,7 +360,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             item {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "@thesajidalam",
+                    "SMSController v1.1.0 by @thesajidalam",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth(),
@@ -424,19 +426,24 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 }
 
 @Composable
-private fun StatusBanner(isActive: Boolean, deviceAdminActive: Boolean, batteryOptimized: Boolean) {
+private fun StatusBanner(isActive: Boolean, deviceAdminActive: Boolean, batteryOptimized: Boolean, commandCount: Int = 0) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = if (isActive) Success.copy(alpha = 0.15f) else MaterialTheme.colorScheme.errorContainer)
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(if (isActive) Icons.Default.CheckCircle else Icons.Default.Warning, null, tint = if (isActive) Success else MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(if (isActive) "Service Running" else "Service Stopped", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                if (!deviceAdminActive && isActive) Text("Device admin not enabled (Lock/Wipe unavailable)", style = MaterialTheme.typography.bodySmall, color = Warning)
-                if (batteryOptimized && isActive) Text("Battery optimization may kill service", style = MaterialTheme.typography.bodySmall, color = Warning)
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(if (isActive) Icons.Default.CheckCircle else Icons.Default.Warning, null, tint = if (isActive) Success else MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(if (isActive) "Service Running" else "Service Stopped", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (isActive) {
+                        Text("$commandCount commands executed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (!deviceAdminActive && isActive) Text("Device admin not enabled (Lock/Wipe unavailable)", style = MaterialTheme.typography.bodySmall, color = Warning)
+                    if (batteryOptimized && isActive) Text("Battery optimization may kill service", style = MaterialTheme.typography.bodySmall, color = Warning)
+                }
             }
         }
     }
