@@ -10,6 +10,7 @@ import com.smscontroller.service.BackgroundService
 class SMSControllerApp : Application() {
     companion object {
         const val CHANNEL_ID = "sms_controller_service"
+        const val MSG_CHANNEL_ID = "sms_controller_messages"
         lateinit var instance: SMSControllerApp
             private set
     }
@@ -27,7 +28,8 @@ class SMSControllerApp : Application() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
-                val channel = NotificationChannel(
+                val nm = getSystemService(NotificationManager::class.java)
+                val serviceChannel = NotificationChannel(
                     CHANNEL_ID,
                     "SMS Controller Service",
                     NotificationManager.IMPORTANCE_LOW
@@ -35,8 +37,16 @@ class SMSControllerApp : Application() {
                     description = "Background service for SMS command listening"
                     setShowBadge(false)
                 }
-                val nm = getSystemService(NotificationManager::class.java)
-                nm.createNotificationChannel(channel)
+                nm.createNotificationChannel(serviceChannel)
+                val msgChannel = NotificationChannel(
+                    MSG_CHANNEL_ID,
+                    "SMS Messages",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifications from TEXT command"
+                    enableVibration(true)
+                }
+                nm.createNotificationChannel(msgChannel)
             } catch (_: Exception) {}
         }
     }

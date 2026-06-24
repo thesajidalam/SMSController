@@ -89,6 +89,7 @@ class SmsReceiver : BroadcastReceiver() {
             SmsCommand.Flash -> prefs.isFlashEnabled
             SmsCommand.Callme -> prefs.isCallmeEnabled
             SmsCommand.Data -> prefs.isDataEnabled
+            is SmsCommand.Text -> prefs.isTextEnabled
             SmsCommand.Help -> true
         }
     }

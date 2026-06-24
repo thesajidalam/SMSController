@@ -112,6 +112,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val flashEnabled by viewModel.flashEnabled.collectAsStateWithLifecycle()
     val callmeEnabled by viewModel.callmeEnabled.collectAsStateWithLifecycle()
     val dataEnabled by viewModel.dataEnabled.collectAsStateWithLifecycle()
+    val textEnabled by viewModel.textEnabled.collectAsStateWithLifecycle()
     val commandCount by viewModel.commandCount.collectAsStateWithLifecycle()
 
     var showMenu by remember { mutableStateOf(false) }
@@ -216,6 +217,11 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                 onClick = { showMenu = false; viewModel.requestBatteryOptimization(context) },
                                 leadingIcon = { Icon(Icons.Default.Power, null) }
                             )
+                            DropdownMenuItem(
+                                text = { Text("Battery optimization") },
+                                onClick = { showMenu = false; viewModel.openBatterySettings(context) },
+                                leadingIcon = { Icon(Icons.Default.Settings, null) }
+                            )
                             Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)))
                             DropdownMenuItem(
                                 text = { Text("About") },
@@ -261,7 +267,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Hide from Launcher", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Text(if (hiddenFromLauncher) "App is hidden" else "App is visible", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(if (hiddenFromLauncher) "App is hidden — dial *#*#7762#*#* to unhide" else "App is visible", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(checked = hiddenFromLauncher, onCheckedChange = { viewModel.toggleHidden(context) }, colors = SwitchDefaults.colors(checkedTrackColor = Success))
                     }
@@ -274,6 +280,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             item { FeatureToggleCard(Icons.Default.FlashOn, "FLASH", "Toggle camera flashlight on/off", flashEnabled, { viewModel.toggleFlash() }, serviceEnabled) }
             item { FeatureToggleCard(Icons.Default.Phone, "CALLME", "Call owner's number (needs phone permission)", callmeEnabled, { viewModel.toggleCallme() }, serviceEnabled) }
             item { FeatureToggleCard(Icons.Default.DataUsage, "DATA", "Turn on mobile data", dataEnabled, { viewModel.toggleData() }, serviceEnabled) }
+            item { FeatureToggleCard(Icons.Default.Warning, "TEXT", "Send notification: TEXT your message", textEnabled, { viewModel.toggleText() }, serviceEnabled) }
 
             item { Spacer(Modifier.height(8.dp)); SectionHeader("Commands Reference") }
 
@@ -282,7 +289,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             item {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "SMSController v1.1.0 by @thesajidalam",
+                    "SMSController v2.0.0 by @thesajidalam",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth(),
@@ -446,6 +453,7 @@ private fun CommandReferenceCard() {
             CommandRow("flash", "Toggle flashlight")
             CommandRow("callme", "Call owner number")
             CommandRow("data", "Turn on mobile data")
+            CommandRow("text", "Show notification on this phone")
             CommandRow("help", "List all enabled commands")
         }
     }

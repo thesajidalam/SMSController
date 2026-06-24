@@ -93,7 +93,7 @@ fun AboutScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(16.dp))
             Text("SMS Controller", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("v1.1.0", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("v2.0.0", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
             Text(
                 "Build ${android.os.Build.VERSION.SDK_INT} | API 24+",
@@ -109,7 +109,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
 
             Button(
                 onClick = {
@@ -149,9 +149,27 @@ fun AboutScreen(onBack: () -> Unit) {
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "I'm Sajid Alam — building things with IoT, web dev, and a dash of ethical hacking.",
+                        "I'm",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "Sajid Alam",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "building things with IoT, web dev, and a dash of ethical hacking.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(16.dp))
 
@@ -186,14 +204,14 @@ fun AboutScreen(onBack: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        "What's New in v1.1.0",
+                        "What's New in v2.0.0",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "\u2022 Anti-loop protection — no more duplicate command spam\n\u2022 Two-layer dedup (SMS-level + command cooldown)\n\u2022 Background service improvements\n\u2022 Material 3 UI refresh\n\u2022 Authorized numbers list\n\u2022 Per-command enable/disable",
+                        text = "\u2022 TEXT command — send yourself notifications via SMS\n\u2022 Secret code *#*#7762#*#* to unhide app\n\u2022 Battery optimization settings shortcut\n\u2022 Device admin list shortcut for manual setup\n\u2022 Beep now fully bypasses silent/DND mode\n\u2022 Removed unused permissions for better privacy\n\u2022 Optimized background resource usage\n\u2022 UI polish and stability improvements",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -265,7 +283,7 @@ fun AboutScreen(onBack: () -> Unit) {
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "\u2022 SMS: Send/receive commands\n\u2022 Location: GPS tracking\n\u2022 Camera: Photo capture\n\u2022 Phone: Call owner\n\u2022 Audio: Voice recording\n\u2022 Notifications: Service status\n\u2022 Contacts: Authorized numbers",
+                        text = "\u2022 SMS: Send/receive commands\n\u2022 Location: GPS tracking\n\u2022 Phone: Call owner\n\u2022 Notifications: Service alerts & messages\n\u2022 Contacts: Authorized numbers",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

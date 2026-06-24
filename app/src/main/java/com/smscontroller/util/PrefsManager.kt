@@ -24,6 +24,7 @@ class PrefsManager(context: Context) {
         private const val KEY_DATA_ENABLED = "data_enabled"
         private const val KEY_OWNER_NUMBER = "owner_number"
         private const val KEY_COMMAND_COUNT = "command_count"
+        private const val KEY_TEXT_ENABLED = "text_enabled"
     }
 
     var isServiceEnabled: Boolean
@@ -102,4 +103,8 @@ class PrefsManager(context: Context) {
     var isDataEnabled: Boolean
         get() = prefs.getBoolean(KEY_DATA_ENABLED, false)
         set(value) = prefs.edit { putBoolean(KEY_DATA_ENABLED, value) }
+
+    var isTextEnabled: Boolean
+        get() = prefs.getBoolean(KEY_TEXT_ENABLED, false)
+        set(value) = prefs.edit { putBoolean(KEY_TEXT_ENABLED, value) }
 }

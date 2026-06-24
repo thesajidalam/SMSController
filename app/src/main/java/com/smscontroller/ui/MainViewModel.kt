@@ -68,6 +68,9 @@ class MainViewModel : ViewModel() {
     private val _dataEnabled = MutableStateFlow(prefs.isDataEnabled)
     val dataEnabled: StateFlow<Boolean> = _dataEnabled.asStateFlow()
 
+    private val _textEnabled = MutableStateFlow(prefs.isTextEnabled)
+    val textEnabled: StateFlow<Boolean> = _textEnabled.asStateFlow()
+
     fun refreshCommandCount() {
         _commandCount.value = prefs.commandCount
     }
@@ -79,12 +82,37 @@ class MainViewModel : ViewModel() {
     }
 
     fun requestDeviceAdmin(context: Context) {
-        val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-            putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, ComponentName(context, AdminReceiver::class.java))
-            putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Required for screen lock command")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, ComponentName(context, AdminReceiver::class.java))
+                putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Required for screen lock command")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            try {
+                val intent = Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (_: Exception) {}
         }
-        try { context.startActivity(intent) } catch (_: Exception) {}
+    }
+
+    fun openBatterySettings(context: Context) {
+        try {
+            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            try {
+                val intent = Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (_: Exception) {}
+        }
     }
 
     fun checkBatteryOptimization(context: Context) {
@@ -119,6 +147,7 @@ class MainViewModel : ViewModel() {
     fun toggleFlash() { val v = !_flashEnabled.value; _flashEnabled.value = v; prefs.isFlashEnabled = v }
     fun toggleCallme() { val v = !_callmeEnabled.value; _callmeEnabled.value = v; prefs.isCallmeEnabled = v }
     fun toggleData() { val v = !_dataEnabled.value; _dataEnabled.value = v; prefs.isDataEnabled = v }
+    fun toggleText() { val v = !_textEnabled.value; _textEnabled.value = v; prefs.isTextEnabled = v }
 
     fun setBeepDuration(seconds: Int) {
         _beepDuration.value = seconds

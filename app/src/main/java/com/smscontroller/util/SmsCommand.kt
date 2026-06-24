@@ -11,6 +11,7 @@ sealed class SmsCommand {
     data object Callme : SmsCommand()
     data object Data : SmsCommand()
     data object Help : SmsCommand()
+    data class Text(val message: String) : SmsCommand()
 
     companion object {
         private val COMMAND_MAP = mapOf(
@@ -26,6 +27,10 @@ sealed class SmsCommand {
             "call" to Callme,
             "data" to Data,
             "mobile" to Data,
+            "text" to Text(""),
+            "sms" to Text(""),
+            "message" to Text(""),
+            "notify" to Text(""),
             "help" to Help,
             "commands" to Help
         )
@@ -34,9 +39,13 @@ sealed class SmsCommand {
             val text = body.trim().lowercase()
             val words = text.split("\\s+".toRegex()).filter { it.isNotBlank() }
 
-            for (word in words) {
+            for ((i, word) in words.withIndex()) {
                 val command = COMMAND_MAP[word]
                 if (command != null) {
+                    if (command is Text) {
+                        val msg = words.drop(i + 1).joinToString(" ")
+                        return Text(msg)
+                    }
                     if (command == Beep) {
                         if (words.contains("stop")) return BeepStop
                         if (words.contains("status")) return BeepStatus

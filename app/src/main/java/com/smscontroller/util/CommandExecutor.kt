@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.app.NotificationManager
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -18,6 +19,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -87,6 +89,7 @@ object CommandExecutor {
                 SmsCommand.Flash -> toggleFlash(context, senderNumber)
                 SmsCommand.Callme -> callOwner(context, senderNumber)
                 SmsCommand.Data -> enableData(context, senderNumber)
+                is SmsCommand.Text -> sendTextNotification(context, senderNumber, (command as SmsCommand.Text).message)
                 SmsCommand.Help -> sendHelp(context, senderNumber)
             }
         } catch (e: Exception) {
@@ -158,6 +161,8 @@ object CommandExecutor {
                 audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
                 audioManager.setStreamVolume(AudioManager.STREAM_ALARM, audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0)
+                audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION), 0)
+                audioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, audioManager.getStreamMaxVolume(AudioManager.STREAM_SYSTEM), 0)
             } catch (_: Exception) {}
 
             var wakeLock: PowerManager.WakeLock? = null
@@ -454,5 +459,31 @@ object CommandExecutor {
         val result = NetworkHelper.enableMobileData(context)
         SmsSender.send(context, senderNumber, result)
         SmsLogger.log("DATA: $result")
+    }
+
+    private fun sendTextNotification(context: Context, senderNumber: String, message: String) {
+        if (isDuplicate("text", senderNumber, 15000)) return
+        if (message.isBlank()) {
+            SmsSender.send(context, senderNumber, "Usage: TEXT your message here")
+            SmsLogger.log("TEXT FAIL: empty message")
+            return
+        }
+        try {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notification = NotificationCompat.Builder(context, SMSControllerApp.MSG_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("MSG from $senderNumber")
+                .setContentText(message)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build()
+            nm.notify(System.currentTimeMillis().toInt(), notification)
+            SmsSender.send(context, senderNumber, "Notification sent: $message")
+            SmsLogger.log("TEXT notification sent: $message")
+        } catch (e: Exception) {
+            SmsSender.send(context, senderNumber, "Text Error: ${e.message}")
+            SmsLogger.log("TEXT FAIL: ${e.message}")
+        }
     }
 }
