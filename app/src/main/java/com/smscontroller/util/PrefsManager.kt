@@ -19,14 +19,9 @@ class PrefsManager(context: Context) {
         private const val KEY_BEEP_DURATION = "beep_duration"
         private const val KEY_BEEP_RINGTONE_URI = "beep_ringtone_uri"
         private const val KEY_BATTERY_ENABLED = "battery_enabled"
-        private const val KEY_PHOTO_ENABLED = "photo_enabled"
-        private const val KEY_WIPE_ENABLED = "wipe_enabled"
         private const val KEY_FLASH_ENABLED = "flash_enabled"
         private const val KEY_CALLME_ENABLED = "callme_enabled"
-        private const val KEY_WIFI_ENABLED = "wifi_enabled"
         private const val KEY_DATA_ENABLED = "data_enabled"
-        private const val KEY_RECORD_ENABLED = "record_enabled"
-        private const val KEY_SCREENSHOT_ENABLED = "screenshot_enabled"
         private const val KEY_OWNER_NUMBER = "owner_number"
         private const val KEY_COMMAND_COUNT = "command_count"
     }
@@ -63,6 +58,14 @@ class PrefsManager(context: Context) {
         get() = prefs.getString(KEY_OWNER_NUMBER, "") ?: ""
         set(value) = prefs.edit { putString(KEY_OWNER_NUMBER, value) }
 
+    var commandCount: Int
+        get() = prefs.getInt(KEY_COMMAND_COUNT, 0)
+        set(value) = prefs.edit { putInt(KEY_COMMAND_COUNT, value) }
+
+    fun incrementCommandCount() {
+        commandCount = commandCount + 1
+    }
+
     fun getAuthorizedNumbers(): List<String> {
         val json = prefs.getString(KEY_AUTHORIZED_NUMBERS, "[]") ?: "[]"
         val arr = JSONArray(json)
@@ -84,25 +87,9 @@ class PrefsManager(context: Context) {
         }
     }
 
-    var commandCount: Int
-        get() = prefs.getInt(KEY_COMMAND_COUNT, 0)
-        set(value) = prefs.edit { putInt(KEY_COMMAND_COUNT, value) }
-
-    fun incrementCommandCount() {
-        commandCount = commandCount + 1
-    }
-
     var isBatteryEnabled: Boolean
         get() = prefs.getBoolean(KEY_BATTERY_ENABLED, false)
         set(value) = prefs.edit { putBoolean(KEY_BATTERY_ENABLED, value) }
-
-    var isPhotoEnabled: Boolean
-        get() = prefs.getBoolean(KEY_PHOTO_ENABLED, false)
-        set(value) = prefs.edit { putBoolean(KEY_PHOTO_ENABLED, value) }
-
-    var isWipeEnabled: Boolean
-        get() = prefs.getBoolean(KEY_WIPE_ENABLED, false)
-        set(value) = prefs.edit { putBoolean(KEY_WIPE_ENABLED, value) }
 
     var isFlashEnabled: Boolean
         get() = prefs.getBoolean(KEY_FLASH_ENABLED, false)
@@ -112,19 +99,7 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean(KEY_CALLME_ENABLED, false)
         set(value) = prefs.edit { putBoolean(KEY_CALLME_ENABLED, value) }
 
-    var isWifiEnabled: Boolean
-        get() = prefs.getBoolean(KEY_WIFI_ENABLED, false)
-        set(value) = prefs.edit { putBoolean(KEY_WIFI_ENABLED, value) }
-
     var isDataEnabled: Boolean
         get() = prefs.getBoolean(KEY_DATA_ENABLED, false)
         set(value) = prefs.edit { putBoolean(KEY_DATA_ENABLED, value) }
-
-    var isRecordEnabled: Boolean
-        get() = prefs.getBoolean(KEY_RECORD_ENABLED, false)
-        set(value) = prefs.edit { putBoolean(KEY_RECORD_ENABLED, value) }
-
-    var isScreenshotEnabled: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSHOT_ENABLED, false)
-        set(value) = prefs.edit { putBoolean(KEY_SCREENSHOT_ENABLED, value) }
 }

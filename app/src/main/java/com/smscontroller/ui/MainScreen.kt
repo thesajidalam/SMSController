@@ -32,36 +32,27 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.DataUsage
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.PowerOff
-import androidx.compose.material.icons.filled.Radio
-import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -118,23 +109,17 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val beepRingtoneUri by viewModel.beepRingtoneUri.collectAsStateWithLifecycle()
     val ownerNumber by viewModel.ownerNumber.collectAsStateWithLifecycle()
     val batteryEnabled by viewModel.batteryEnabled.collectAsStateWithLifecycle()
-    val photoEnabled by viewModel.photoEnabled.collectAsStateWithLifecycle()
-    val wipeEnabled by viewModel.wipeEnabled.collectAsStateWithLifecycle()
     val flashEnabled by viewModel.flashEnabled.collectAsStateWithLifecycle()
     val callmeEnabled by viewModel.callmeEnabled.collectAsStateWithLifecycle()
-    val wifiEnabled by viewModel.wifiEnabled.collectAsStateWithLifecycle()
     val dataEnabled by viewModel.dataEnabled.collectAsStateWithLifecycle()
-    val recordEnabled by viewModel.recordEnabled.collectAsStateWithLifecycle()
-    val screenshotEnabled by viewModel.screenshotEnabled.collectAsStateWithLifecycle()
-    val screenCaptureReady by viewModel.screenCaptureReady.collectAsStateWithLifecycle()
     val commandCount by viewModel.commandCount.collectAsStateWithLifecycle()
 
     var showMenu by remember { mutableStateOf(false) }
     var showNumbersDialog by remember { mutableStateOf(false) }
     var showBeepSettings by remember { mutableStateOf(false) }
     var showOwnerDialog by remember { mutableStateOf(false) }
-    var showAdvanced by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showAdvanced by remember { mutableStateOf(false) }
     var tempNumbers by remember { mutableStateOf(authorizedNumbers.toMutableList()) }
     var tempOwner by remember { mutableStateOf(ownerNumber) }
     var tempBeepDuration by remember { mutableIntStateOf(beepDuration) }
@@ -168,26 +153,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                viewModel.setBeepRingtoneUri(uri.toString())
-            }
-        }
-    }
-
-    val screenCaptureLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            viewModel.initScreenCapture(context, result.resultCode, result.data)
-        }
-    }
-
-    val mediaProjectionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val mpm = context.getSystemService(android.content.Context.MEDIA_PROJECTION_SERVICE) as android.media.projection.MediaProjectionManager
-            screenCaptureLauncher.launch(mpm.createScreenCaptureIntent())
+            result.data?.data?.let { uri -> viewModel.setBeepRingtoneUri(uri.toString()) }
         }
     }
 
@@ -195,7 +161,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         viewModel.refreshCommandCount()
         viewModel.checkDeviceAdmin(context)
         viewModel.checkBatteryOptimization(context)
-        viewModel.checkScreenCapture(context)
 
         val perms = mutableListOf<String>()
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
@@ -277,11 +242,11 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
             item { ServiceToggleCard(serviceEnabled) { viewModel.toggleService(context) } }
 
-            item { SectionHeader("Commands") }
+            item { SectionHeader("Core Commands") }
 
-            item { CommandToggleCard(Icons.Default.Lock, "Lock", "Lock screen immediately via SMS", lockEnabled, { viewModel.toggleLock() }, serviceEnabled, requiresAdmin = true, adminActive = deviceAdminActive, onEnableAdmin = { viewModel.requestDeviceAdmin(context) }) }
-            item { CommandToggleCard(Icons.Default.VolumeUp, "Beep", "Loud sound & vibration for ${beepDuration}s (disables silent)", beepEnabled, { viewModel.toggleBeep() }, serviceEnabled) }
-            item { CommandToggleCard(Icons.Default.GpsFixed, "GPS", "Get live location replied via SMS", gpsEnabled, { viewModel.toggleGps() }, serviceEnabled) }
+            item { CommandToggleCard(Icons.Default.Lock, "Lock", "Lock screen via SMS (needs Device Admin)", lockEnabled, { viewModel.toggleLock() }, serviceEnabled, requiresAdmin = true, adminActive = deviceAdminActive, onEnableAdmin = { viewModel.requestDeviceAdmin(context) }) }
+            item { CommandToggleCard(Icons.Default.VolumeUp, "Beep", "Loud alarm + vibration (BEEP STOP / BEEP STATUS)", beepEnabled, { viewModel.toggleBeep() }, serviceEnabled) }
+            item { CommandToggleCard(Icons.Default.GpsFixed, "GPS", "Get live GPS location via SMS", gpsEnabled, { viewModel.toggleGps() }, serviceEnabled) }
 
             item { Spacer(Modifier.height(4.dp)); SectionHeader("Privacy") }
 
@@ -303,55 +268,12 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 }
             }
 
-            item { Spacer(Modifier.height(4.dp)); SectionHeader("Advanced Features") }
+            item { Spacer(Modifier.height(4.dp)); SectionHeader("Additional Commands") }
 
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().clickable { showAdvanced = !showAdvanced }.animateContentSize(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Code, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Text("Tap to ${if (showAdvanced) "hide" else "show"} advanced SMS features", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        if (showAdvanced) {
-                            Spacer(Modifier.height(4.dp))
-                            Text("These features require additional permissions. Enable only what you need.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-
-            if (showAdvanced) {
-                item { FeatureToggleCard(Icons.Default.BatteryFull, "BATTERY", "Reply with battery % and charging status", batteryEnabled, { viewModel.toggleBattery() }, serviceEnabled) }
-                item { FeatureToggleCard(Icons.Default.CameraAlt, "PHOTO", "Capture photo and save to device (needs camera permission)", photoEnabled, { viewModel.togglePhoto() }, serviceEnabled) }
-                item { FeatureToggleCard(Icons.Default.DeleteForever, "WIPE", "Factory reset device (needs device admin)", wipeEnabled, { viewModel.toggleWipe() }, serviceEnabled, requiresAdmin = true, adminActive = deviceAdminActive, onEnableAdmin = { viewModel.requestDeviceAdmin(context) }) }
-                item { FeatureToggleCard(Icons.Default.FlashOn, "FLASH", "Toggle flashlight on/off", flashEnabled, { viewModel.toggleFlash() }, serviceEnabled) }
-                item { FeatureToggleCard(Icons.Default.Phone, "CALLME", "Call owner's number (needs phone permission)", callmeEnabled, { viewModel.toggleCallme() }, serviceEnabled) }
-                item { FeatureToggleCard(Icons.Default.Wifi, "WIFI", "Turn on WiFi", wifiEnabled, { viewModel.toggleWifi() }, serviceEnabled) }
-                item { FeatureToggleCard(Icons.Default.DataUsage, "DATA", "Turn on mobile data", dataEnabled, { viewModel.toggleData() }, serviceEnabled) }
-                item { FeatureToggleCard(Icons.Default.Radio, "RECORD", "Start/stop audio recording (needs mic permission)", recordEnabled, { viewModel.toggleRecord() }, serviceEnabled) }
-                item {
-                    FeatureToggleCard(
-                        Icons.Default.ScreenShare, "SCREENSHOT", "Capture screen and save locally", screenshotEnabled,
-                        { viewModel.toggleScreenshot() }, serviceEnabled,
-                        extraAction = if (!screenCaptureReady && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                                    val mpm = context.getSystemService(android.content.Context.MEDIA_PROJECTION_SERVICE) as android.media.projection.MediaProjectionManager
-                                    screenCaptureLauncher.launch(mpm.createScreenCaptureIntent())
-                                } else {
-                                    mediaProjectionLauncher.launch(Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION)
-                                }
-                            }
-                        } else null,
-                        extraActionLabel = if (!screenCaptureReady) "Grant screen capture" else null
-                    )
-                }
-            }
+            item { FeatureToggleCard(Icons.Default.BatteryFull, "BATTERY", "Reply with battery level & status", batteryEnabled, { viewModel.toggleBattery() }, serviceEnabled) }
+            item { FeatureToggleCard(Icons.Default.FlashOn, "FLASH", "Toggle camera flashlight on/off", flashEnabled, { viewModel.toggleFlash() }, serviceEnabled) }
+            item { FeatureToggleCard(Icons.Default.Phone, "CALLME", "Call owner's number (needs phone permission)", callmeEnabled, { viewModel.toggleCallme() }, serviceEnabled) }
+            item { FeatureToggleCard(Icons.Default.DataUsage, "DATA", "Turn on mobile data", dataEnabled, { viewModel.toggleData() }, serviceEnabled) }
 
             item { Spacer(Modifier.height(8.dp)); SectionHeader("Commands Reference") }
 
@@ -375,20 +297,10 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     if (showNumbersDialog) {
         MultiNumberDialog(
             numbers = tempNumbers,
-            onAdd = {
-                if (tempNumbers.size < 5) {
-                    tempNumbers = (tempNumbers + "").toMutableList()
-                }
-            },
+            onAdd = { if (tempNumbers.size < 5) { tempNumbers = (tempNumbers + "").toMutableList() } },
             onPickContact = { contactPickerLauncher.launch(null) },
-            onNumberChange = { index, value ->
-                val list = tempNumbers.toMutableList()
-                if (index < list.size) { list[index] = value; tempNumbers = list }
-            },
-            onRemove = { index ->
-                val list = tempNumbers.toMutableList()
-                if (index < list.size) { list.removeAt(index); tempNumbers = list }
-            },
+            onNumberChange = { index, value -> val list = tempNumbers.toMutableList(); if (index < list.size) { list[index] = value; tempNumbers = list } },
+            onRemove = { index -> val list = tempNumbers.toMutableList(); if (index < list.size) { list.removeAt(index); tempNumbers = list } },
             onConfirm = { viewModel.setAuthorizedNumbers(tempNumbers.filter { it.isNotBlank() }); showNumbersDialog = false },
             onDismiss = { showNumbersDialog = false }
         )
@@ -407,10 +319,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 }
                 ringtonePickerLauncher.launch(intent)
             },
-            onConfirm = {
-                viewModel.setBeepDuration(tempBeepDuration)
-                showBeepSettings = false
-            },
+            onConfirm = { viewModel.setBeepDuration(tempBeepDuration); showBeepSettings = false },
             onDismiss = { showBeepSettings = false }
         )
     }
@@ -441,7 +350,7 @@ private fun StatusBanner(isActive: Boolean, deviceAdminActive: Boolean, batteryO
                     if (isActive) {
                         Text("$commandCount commands executed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    if (!deviceAdminActive && isActive) Text("Device admin not enabled (Lock/Wipe unavailable)", style = MaterialTheme.typography.bodySmall, color = Warning)
+                    if (!deviceAdminActive && isActive) Text("Device admin not enabled (Lock unavailable)", style = MaterialTheme.typography.bodySmall, color = Warning)
                     if (batteryOptimized && isActive) Text("Battery optimization may kill service", style = MaterialTheme.typography.bodySmall, color = Warning)
                 }
             }
@@ -500,9 +409,7 @@ private fun CommandToggleCard(
 @Composable
 private fun FeatureToggleCard(
     icon: ImageVector, title: String, description: String, enabled: Boolean, onToggle: () -> Unit,
-    serviceEnabled: Boolean, requiresAdmin: Boolean = false, adminActive: Boolean = false,
-    onEnableAdmin: (() -> Unit)? = null, extraAction: (() -> Unit)? = null,
-    extraActionLabel: String? = null
+    serviceEnabled: Boolean
 ) {
     Card(modifier = Modifier.fillMaxWidth().animateContentSize(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
         Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
@@ -516,22 +423,6 @@ private fun FeatureToggleCard(
                     Text(description, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 Switch(checked = enabled, onCheckedChange = { onToggle() }, enabled = serviceEnabled, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
-            }
-            if (requiresAdmin && enabled && !adminActive) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = { onEnableAdmin?.invoke() }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
-                    Icon(Icons.Default.Shield, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Enable Device Admin", style = MaterialTheme.typography.labelMedium)
-                }
-            }
-            if (extraAction != null && extraActionLabel != null) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = extraAction, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
-                    Icon(Icons.Default.Key, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(extraActionLabel, style = MaterialTheme.typography.labelMedium)
-                }
             }
         }
     }
@@ -548,19 +439,14 @@ private fun CommandReferenceCard() {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text("Send SMS with keyword to control:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(10.dp))
-            CommandRow("lock", "Lock screen instantly")
-            CommandRow("beep", "Loud alarm + vibration")
-            CommandRow("gps", "Live location reply")
-            CommandRow("battery", "Battery % & charging status")
-            CommandRow("photo", "Capture photo")
-            CommandRow("wipe", "Factory reset")
+            CommandRow("lock", "Lock screen (needs Device Admin)")
+            CommandRow("beep", "Loud alarm (beep stop / beep status)")
+            CommandRow("gps", "Live location")
+            CommandRow("battery", "Battery level & status")
             CommandRow("flash", "Toggle flashlight")
             CommandRow("callme", "Call owner number")
-            CommandRow("wifi", "Turn on WiFi")
             CommandRow("data", "Turn on mobile data")
-            CommandRow("record", "Start audio recording")
-            CommandRow("record stop", "Stop recording")
-            CommandRow("screenshot", "Capture screen")
+            CommandRow("help", "List all enabled commands")
         }
     }
 }

@@ -6,37 +6,48 @@ import android.content.Intent
 import android.provider.Telephony
 import com.smscontroller.util.CommandExecutor
 import com.smscontroller.util.PrefsManager
+import com.smscontroller.util.RateLimiter
 import com.smscontroller.util.SmsCommand
+import com.smscontroller.util.SmsLogger
 import com.smscontroller.util.SmsSender
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
 
 class SmsReceiver : BroadcastReceiver() {
     companion object {
         private val processedMessages = ConcurrentHashMap<String, Long>()
-        private val sequenceCounter = AtomicLong(0)
-        private const val DEDUP_WINDOW_MS = 45000L
+        private const val DEDUP_WINDOW_MS = 60000L
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
 
         val prefs = PrefsManager(context)
-        if (!prefs.isServiceEnabled) return
+        if (!prefs.isServiceEnabled) {
+            SmsLogger.log("SMS ignored: service disabled")
+            return
+        }
 
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         val messageBody = messages.firstOrNull()?.messageBody?.trim() ?: return
         val senderNumber = messages.firstOrNull()?.originatingAddress ?: return
         val timestamp = messages.firstOrNull()?.timestampMillis ?: 0L
 
-        if (!prefs.isAuthorized(senderNumber)) return
+        SmsLogger.log("SMS received: '$messageBody' from $senderNumber")
+
+        if (!prefs.isAuthorized(senderNumber)) {
+            SmsLogger.log("SMS rejected: unauthorized sender $senderNumber")
+            return
+        }
 
         val now = System.currentTimeMillis()
         val dedupKey = "${senderNumber}:${messageBody}:${timestamp}"
 
         val previous = processedMessages.putIfAbsent(dedupKey, now)
         if (previous != null) {
-            if (now - previous < DEDUP_WINDOW_MS) return
+            if (now - previous < DEDUP_WINDOW_MS) {
+                SmsLogger.log("SMS dedup: ignored duplicate $dedupKey")
+                return
+            }
             processedMessages[dedupKey] = now
         }
 
@@ -44,10 +55,15 @@ class SmsReceiver : BroadcastReceiver() {
             cleanupOldEntries()
         }
 
-        val command = SmsCommand.fromMessage(messageBody) ?: return
+        val command = SmsCommand.fromMessage(messageBody)
+        if (command == null) {
+            SmsLogger.log("SMS ignored: unknown command '$messageBody'")
+            return
+        }
 
         if (!isCommandEnabled(prefs, command)) {
-            SmsSender.send(context, senderNumber, "Command is disabled. Enable it in app.")
+            SmsSender.send(context, senderNumber, "Command '$command' is disabled. Enable it in app.")
+            SmsLogger.log("SMS rejected: $command disabled")
             return
         }
 
@@ -67,18 +83,13 @@ class SmsReceiver : BroadcastReceiver() {
     private fun isCommandEnabled(prefs: PrefsManager, command: SmsCommand): Boolean {
         return when (command) {
             SmsCommand.Lock -> prefs.isLockEnabled
-            SmsCommand.Beep -> prefs.isBeepEnabled
+            SmsCommand.Beep, SmsCommand.BeepStop, SmsCommand.BeepStatus -> prefs.isBeepEnabled
             SmsCommand.Gps -> prefs.isGpsEnabled
             SmsCommand.Battery -> prefs.isBatteryEnabled
-            SmsCommand.Photo -> prefs.isPhotoEnabled
-            SmsCommand.Wipe -> prefs.isWipeEnabled
             SmsCommand.Flash -> prefs.isFlashEnabled
             SmsCommand.Callme -> prefs.isCallmeEnabled
-            SmsCommand.Wifi -> prefs.isWifiEnabled
             SmsCommand.Data -> prefs.isDataEnabled
-            SmsCommand.RecordStart -> prefs.isRecordEnabled
-            SmsCommand.RecordStop -> prefs.isRecordEnabled
-            SmsCommand.Screenshot -> prefs.isScreenshotEnabled
+            SmsCommand.Help -> true
         }
     }
 }
