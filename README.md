@@ -428,7 +428,7 @@ If SMSController helped you or your business, consider:
 I build tools that put control back in users' hands. SMSController was born from a simple idea: *your device should obey you, even when there's no internet.*
 
 - 🔭 Currently working on: Offline-first Android tools
-- 🌍 Based in: Bangladesh
+- 🌍 Based in: Prayagraj
 - 💬 Ask me about: Android, Kotlin, Compose, Reverse Engineering
 - 📫 Reach me: [GitHub](https://github.com/thesajidalam)
 
